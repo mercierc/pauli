@@ -11,9 +11,7 @@ function build(){
 }
 
 function run(){
-    echo run
-    docker run alpine ls
-    # docker run -ti influxdb:2.7 sh
+    echo "run not implemented"
 }
 
 function clean(){
