@@ -1,0 +1,12 @@
+builder:
+  image: {{ if .Initiate.buildImage }}<image_name>{{ end }}
+  use_sudo: true
+  tag: {{ if .Initiate.Tag }}latest{{ end }}
+  volumes:
+    - type: bind
+      source: /var/run/docker.sock
+      target: /var/run/docker.sock
+    - type: bind
+      source: /root/.docker/config.json
+      target: $HOME/.docker/config.json
+name: {{ .Initiate.projectName }}
