@@ -1,1 +1,1 @@
-# pauli
+#!/ pauli

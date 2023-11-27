@@ -30,9 +30,9 @@ type Configuration struct {
 func InitiateProject() error {
 
 	templateContent :=`builder:
-  image: {{ if .BuildImage }}{{ else }}<image_name>{{ end }}
+  image: {{ if .BuildImage }}{{ .BuildImage }}{{ else }}<image_name>{{ end }}
   use_sudo: true
-  tag: {{ if .Tag }}{{ else }}latest{{ end }}
+  tag: {{ if .Tag }}{{ .Tag }}{{ else }}latest{{ end }}
   volumes:
     - type: bind
       source: /var/run/docker.sock
@@ -46,6 +46,35 @@ name: {{ .ProjectName }}`
 		ProjectName, BuildImage, Tag string
 	}
 
+	// Create the .pauli folder.
+	if err := os.Mkdir(".pauli", os.ModePerm); err != nil {
+		log.Error().Err(err)
+	}
+	// Create the pauli.sh file.
+	file, err := os.Create(".pauli/pauli.sh")
+	if err != nil {
+		log.Error().Err(err)
+	}
+	defer file.Close()
+	
+	// Download the raw pauli.sh file.
+	var resp *http.Response
+	go func(r *http.Response) {
+
+		r, err := http.Get("https://github.com/mercierc/pauli/raw/main/data/pauli.sh")
+		if err != nil {
+			log.Error().Err(err)
+		}
+
+		// Write the body in the pauli.sh file	
+		if _, err := io.Copy(file, r.Body); err != nil {
+			log.Error().Err(err)
+		}
+		// Ensure the http body is close after the end of the function.
+		defer r.Body.Close()	
+
+	}(resp)
+
 	i := Initiate{}
 	fmt.Printf("Project name (optional, cwd): ")
 	fmt.Scanln(&i.ProjectName)
@@ -57,7 +86,7 @@ name: {{ .ProjectName }}`
 		i.ProjectName, _ = os.Getwd()
 		i.ProjectName = filepath.Base(i.ProjectName)
 	}
-	fmt.Println("%+v", i)
+	fmt.Printf("%+v", i)
 	
 	// Fill the config.tmpl
 	tmpl, err := template.New("config.tmpl").Parse(templateContent)
@@ -65,42 +94,13 @@ name: {{ .ProjectName }}`
 		panic(err)
 	}
 
-	// Create the .pauli folder.
-	if err := os.Mkdir("a", os.ModePerm); err != nil {
-		log.Error().Err(err)
-	}
-	// Create the pauli.sh file.
-	file, err := os.Create("a/pauli.sh")
-	if err != nil {
-		log.Error().Err(err)
-	}
-	defer file.Close()
 	
 	// Apply user entries to the template and save.
-	outputFile, err := os.Create("a/config.yaml")
+	outputFile, err := os.Create(".pauli/config.yaml")
 	err = tmpl.Execute(outputFile, i)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(templateContent)
 
-	// Download the raw pauli.sh file.
-	resp, err := http.Get("https://github.com/mercierc/pauli/raw/main/data/pauli.sh")
-	if err != nil {
-		log.Error().Err(err)
-	}
-	// Ensure the http body is close after the end of the function.
-	defer resp.Body.Close()
-
-	
-	log.Info().Int("StatusCode", resp.StatusCode).Msg("")
-	//body, err := io.ReadAll(resp.Body)
-	// log.Info().Msg(string(body))
-
-	// Write the body in the pauli.sh file
-	
-	if _, err := io.Copy(file, resp.Body); err != nil {
-		log.Error().Err(err)
-	}
 	return nil
 }

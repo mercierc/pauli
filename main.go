@@ -2,12 +2,12 @@ package main
 
 
 import (
-	"os/exec"
 	"os"
-
+	
 	"github.com/rs/zerolog"
 
 	"github.com/mercierc/pauli/cmd"
+	"github.com/mercierc/pauli/src"
 )
 
 
@@ -30,7 +30,9 @@ func main() {
 	} else {
 		logger = zerolog.New(os.Stderr).Level(zerolog.InfoLevel)
 	}
-	
+
+	src.BuildContainerShell(".pauli/config.yaml")
+	logger.Info().Msg("End")
 }
 
 

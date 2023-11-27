@@ -22,6 +22,7 @@ var rootCmd = &cobra.Command{
 // Execute executes the root command.
 func Execute() error {
 	rootCmd.AddCommand(initCmd)
+	rootCmd.AddCommand(buildCmd)
 	return rootCmd.Execute()
 }
 
