@@ -3,60 +3,85 @@ package src
 import(
 	"os/exec"
 	"os"
-	//"errors"
+	"errors"
+	"strings"
 	"fmt"
 	
 	"gopkg.in/yaml.v2"
-	"github.com/rs/zerolog/log"
+	"github.com/mercierc/pauli/logs"
 )
 
 
 // Start an interactive session in a docker container from the build image.
-func BuildContainerShell(configPath string) error {
+func BuildContainerCommand(configPath string) (string, error) {
+
+	var dockerCommand string
+	
 	// Read and parse the config.yaml file.
 	content, err := os.ReadFile(configPath)
 	if err != nil {
-		log.Error().Err(err)
-		return err
+		logs.Logger.Error().Err(err).Msg("error")
+		return dockerCommand, err
 	}
 
-	dockerCmdTmpl := "docker run -t {{ .Volumes }}{{ .Image }}"
 	var conf Configuration
 	err = yaml.Unmarshal(content, &conf)
-	fmt.Printf("Configuration %+v\n", conf.Builder)
 
-	var dockerCommand := "docker run"
-	var volumes string
-	for _, el := range conf.Builder.Volumes {
-		dockerCommand += " -v " + el.Source + ":" + el.Target
+	// Verify mandatory fields.
+	if conf.Builder.Image == "" ||
+	   conf.Builder.Tag == "" {
+		err = errors.New("A field is missing in " + configPath +
+			" among image, tag, volumes")
+		logs.Logger.Error().Err(err).Msg("error")
+		return dockerCommand, err
 	}
 
-	docker
-	fmt.Println("Volumes: ", volumes)
+	dockerCommand = "docker run --workdir /app "
+
+	// Add the cwd and map it to /app as container workdir.
+	conf.Builder.Volumes = append(conf.Builder.Volumes, Volume{
+		Type: "bind",
+		Source: "$PWD",
+		Target: "/app",		
+	})
 	
-	return nil
+	for _, el := range conf.Builder.Volumes {
+		dockerCommand += "-v " + el.Source + ":" + el.Target + " "
+	}
+	if !strings.Contains(dockerCommand, "/var/run/docker.sock") {
+		err = errors.New("/var/run/docker.sock not mounted")
+		logs.Logger.Error().Err(err).Msg("Add /var/run/docker.sock:/var/run/docker.sock to volumes in " + configPath)
+	}
+	// Add image and tag.
+	dockerCommand += fmt.Sprintf("%s:%s ", conf.Builder.Image, conf.Builder.Tag)
+
+	return dockerCommand, nil
 }
 
 // Execute bash functions presents in .pauli/pauli.sh
-func RunPauliShell(command string, args []string) {
-// Check the pauli folder is present with its files.
-	path, err := exec.LookPath("./.pauli/pauli.sh")
-	if err != nil {
-		log.Fatal().Msg("installing pauli.sh is in your future " + path)
-	}
-	log.Info().Msgf("Command %s exists", path)
-
+func PauliShell(command string) {
 	
-	// Construction de la commande Docker
-	shell := exec.Command("./.pauli/pauli.sh", "build")
+	// // Check the pauli folder is present with its files.
+	// path, err := exec.LookPath("./.pauli/pauli.sh")
+	// if err != nil {
+	// 	logs.Logger.Fatal().Msg("installing pauli.sh is in your future " + path)
+	// }
+	// logs.Logger.Info().Msgf("Command %s exists", path)
 
+	fmt.Println("Command: ", command)
+	// Construction de la commande Docker
+	shell := exec.Command(command)
+	logs.Logger.Info().Msgf("CI")
 	// Configuration de la sortie standard pour afficher les résultats de la commande
 	shell.Stdout = os.Stdout
 	shell.Stderr = os.Stderr
 	shell.Stdin = os.Stdin
 
 	// Exécution de la commande Docker
-	shell.Run()
+	out, _ := shell.Output()
+	fmt.Println(out)
 }
 
 // Former la commander docke rrun ligne 23
+
+

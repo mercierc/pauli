@@ -12,16 +12,18 @@ import(
 	"github.com/rs/zerolog/log"
 )
 
+type Volume struct { 
+	Type   string `yaml:"type"`
+	Source string `yaml:"source"`
+	Target string `yaml:"target"`
+}
+
 type Configuration struct {
 	Builder struct {
 		Image   string `yaml:"image"`
-		UseSudo bool   `yaml:"use_sudo"`
 		Tag     string `yaml:"tag"`
-		Volumes []struct {
-			Type   string `yaml:"type"`
-			Source string `yaml:"source"`
-			Target string `yaml:"target"`
-		} `yaml:"volumes"`
+		UseSudo bool   `yaml:"use_sudo"`
+		Volumes []Volume `yaml:"volumes"`
 	} `yaml:"builder"`
 	Name string `yaml:"name"`
 }
@@ -93,7 +95,6 @@ name: {{ .ProjectName }}`
 	if err != nil {
 		panic(err)
 	}
-
 	
 	// Apply user entries to the template and save.
 	outputFile, err := os.Create(".pauli/config.yaml")
