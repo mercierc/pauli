@@ -39,9 +39,6 @@ func InitiateProject() error {
     - type: bind
       source: /var/run/docker.sock
       target: /var/run/docker.sock
-    - type: bind
-      source: /root/.docker/config.json
-      target: $HOME/.docker/config.json
 name: {{ .ProjectName }}`
 
 	type Initiate struct {

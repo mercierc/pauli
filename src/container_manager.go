@@ -4,11 +4,11 @@ import(
 	"context"
 	"os"
 	"os/exec"
-	"fmt"
+	//"fmt"
 	
 	"gopkg.in/yaml.v2"
 	"github.com/docker/docker/client"
-	// "github.com/docker/docker/errdefs"
+	"github.com/docker/docker/errdefs"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/mount"
@@ -119,17 +119,23 @@ func WithConfigYaml(configYamlPath string, containerName string, shell bool) Opt
 
 		// Create a new valid container
 		resp, err := c.cli.ContainerCreate(c.ctx, &conf, &confHost, nil, nil, c.containerName)
-		if err != nil {
-			
-			logs.Logger.Error().Err(err).Msgf("To solve this issue try 'docker rm %s'", c.containerName)
+
+		switch errorType := err.(type) {
+		case nil:
+			logs.Logger.Info().Msgf("Container %s created with ID=%s",
+				c.containerName,
+				resp.ID[:10],
+			)
+		case errdefs.ErrInvalidParameter:
+			logs.Logger.Error().Err(err).Msgf("Error type is %T", errorType)
+			logs.Logger.Debug().Msg("Adapt your volume mapping configuration to solve this issue")
+		default:
+			logs.Logger.Error().Err(err).Msgf("Error type is %T", errorType)
+			panic(err)
 		}
 		
 		c.containerID = resp.ID
 		
-		logs.Logger.Info().Msgf("Container %s created with ID=%s",
-			c.containerName,
-			c.containerID[:10],
-		)
 	}
 }
 
@@ -208,23 +214,26 @@ func (c *ContainerManager) Shell() {
 		panic(err)
 	}
 
-	shell := exec.Command(fmt.Sprintf("docker exec -ti %s bash", c.containerName))
-	ok := fmt.Sprintf("docker exec -ti %s bash", c.containerName)
-	logs.Logger.Trace().Msg(ok)
-	logs.Logger.Info().Msgf("Interactive session.")
-	// Configuration de la sortie standard pour afficher les résultats de la commande
-	shell.Stdout = os.Stdout
-	shell.Stderr = os.Stderr
-	shell.Stdin = os.Stdin
+	cmd := exec.Command("docker", "exec", "-ti", c.containerName, "sh")
+
+	logs.Logger.Info().Msgf("Interactive session >>>")
+
+	// Pipe the standard input/output to the application standar input/output
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
 
 	// Exécution de la commande Docker
-	out, _ := shell.Output()
-	fmt.Println(out)
+	err = cmd.Run()
+
+	if err != nil {
+		logs.Logger.Error().Err(err)
+	}
 
 	// Remove already existing container.
-	// err = c.cli.ContainerRemove(
-	// 	c.ctx,
-	// 	c.containerName,
-	// 	types.ContainerRemoveOptions{Force: true})
+	err = c.cli.ContainerRemove(
+		c.ctx,
+		c.containerName,
+		types.ContainerRemoveOptions{Force: true})
 	logs.Logger.Error().Err(err)
 }

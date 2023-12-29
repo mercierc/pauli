@@ -16,7 +16,7 @@ var shellCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string){
 		logs.Logger.Trace().Msgf("shell %s", args)
 		cm := src.NewContainerManager(
-			src.WithEntryPoint([]string{"sh", "-c", "'while true; do sleep 10; done'"}),
+			src.WithEntryPoint([]string{"sleep", "infinity"}),
 			src.WithConfigYaml(configPath, "pauli_build", true),
 		)
 		cm.Shell()
