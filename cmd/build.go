@@ -17,9 +17,8 @@ var buildCmd = &cobra.Command{
 		logs.Logger.Trace().Msgf("build %s", args)
 		cm := src.NewContainerManager(
 			src.WithCmd(append([]string{".pauli/pauli.sh", "build"}, args...)),
-			src.WithConfigYaml(configPath, "pauli_build"),
+			src.WithConfigYaml(configPath, "pauli_build", false),
 		)
-
 		cm.Start()
 	},
 }

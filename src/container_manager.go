@@ -3,6 +3,8 @@ package src
 import(
 	"context"
 	"os"
+	"os/exec"
+	"fmt"
 	
 	"gopkg.in/yaml.v2"
 	"github.com/docker/docker/client"
@@ -21,6 +23,7 @@ type ContainerManager struct {
 	containerID string
 	containerName string
 	cmd []string
+	entryPoint []string
 	exist bool
 }
 
@@ -44,10 +47,16 @@ func WithCmd(cmd []string) Opt {
 	}
 }
 
+func WithEntryPoint(entryPoint []string) Opt {
+	return func(c *ContainerManager) {
+		c.entryPoint = entryPoint
+	}
+}
+
 
 // Intanciate the docker client and create the docker container based on the
 // config.yaml file.
-func WithConfigYaml(configYamlPath string, containerName string) Opt {
+func WithConfigYaml(configYamlPath string, containerName string, shell bool) Opt {
 	return func(c *ContainerManager) {
 		c.ctx = context.Background()
 		c.containerName = containerName
@@ -95,14 +104,15 @@ func WithConfigYaml(configYamlPath string, containerName string) Opt {
 		
 		// Convert the client.Config
 		conf := container.Config{
-			AttachStdin: true,  // Attach the standard input, makes possible user interaction
-			AttachStdout: true,  // Attach the standard output
+			AttachStdin: false,  // makes possible user interaction
+			AttachStdout: false,  // Attach the standard output
 			AttachStderr: false,  // Attach the standard error
-			Env: []string{"ENVVAR=VALEUR"},  // List of environment variable to set in the container
+	                Tty: false,
+			Env: []string{"ENVVAR=VALEUR"}, 
 			Cmd: c.cmd,  // Command to run when starting the container
-			Image:"alpine_pauli:latest",  // Name of the image 
-			WorkingDir: "/app",  // Current directory (PWD) in the command will be launched
-			Tty: false,
+			Entrypoint: c.entryPoint,
+			Image: confYaml.Builder.Image + ":" + confYaml.Builder.Tag,
+			WorkingDir: "/app",  
 		}
 		confHost := container.HostConfig{Mounts: mounts}
 
@@ -111,7 +121,7 @@ func WithConfigYaml(configYamlPath string, containerName string) Opt {
 		resp, err := c.cli.ContainerCreate(c.ctx, &conf, &confHost, nil, nil, c.containerName)
 		if err != nil {
 			
-			logs.Logger.Error().Err(err).Msg("")
+			logs.Logger.Error().Err(err).Msgf("To solve this issue try 'docker rm %s'", c.containerName)
 		}
 		
 		c.containerID = resp.ID
@@ -131,7 +141,7 @@ func (c *ContainerManager) Start() {
 	if err != nil {
 		panic(err)
 	}
-	
+
 	c.DockerLogsToHost()
 	
 	// Remove already existing container.
@@ -139,8 +149,38 @@ func (c *ContainerManager) Start() {
 		c.ctx,
 		c.containerName,
 		types.ContainerRemoveOptions{Force: true})
-	logs.Logger.Error().Err(err)
+	logs.Logger.Error().Err(err)	
+}
+
+
+// Write docker logs on the host terminal.
+func (c *ContainerManager) DockerLogsToHost() {
+	statusCh, errCh := c.cli.ContainerWait(
+		c.ctx,
+		c.containerID,
+		container.WaitConditionNotRunning,
+	)
+
+	select {
+	case err := <-errCh:
+		if err != nil {
+			panic(err)
+		}
+	case <-statusCh:
+	}
 	
+	out, err := c.cli.ContainerLogs(
+		c.ctx,
+		c.containerID,
+		types.ContainerLogsOptions{
+			ShowStdout: true,
+			Follow: true,
+		})
+	if err != nil {
+		panic(err)
+	}
+
+	stdcopy.StdCopy(os.Stdout, os.Stderr, out)
 }
 
 
@@ -162,63 +202,29 @@ func (c *ContainerManager) GetID() string {
 }
 
 // Execute a command on an already existing container.
-func (c *ContainerManager) Exec(cmd []string) {
-	logs.Logger.Trace().Msgf("Exec container %v", c.containerName)
-
-	execConfig := types.ExecConfig{
-		Privileged: false,     // Is the container in privileged mode
-		Tty: false,     // Attach standard streams to a tty.
-		AttachStdin: false,     // Attach the standard input, makes possible user interaction
-		AttachStderr: false,     // Attach the standard error
-		AttachStdout: false,     // Attach the standard output
-		Detach: false,    // Execute in detach mode
-		Env: []string{}, // Environment variables
-		WorkingDir: "/app",   // Working directory
-		Cmd: cmd, // Execution commands and args
-	}
-
-	resp, err := c.cli.ContainerExecCreate(c.ctx, c.containerID, execConfig)
-	if err == nil {
-		panic(err)
-	}
-	logs.Logger.Info().Msgf("ExecCreate returns: %+v", resp)
-	err = c.cli.ContainerExecStart(c.ctx, resp.ID, types.ExecStartCheck{})
-	if err == nil {
-		panic(err)
-	}
-
-	
-	ci, err := c.cli.ContainerExecInspect(c.ctx, resp.ID)
-	if err == nil {
-		panic(err)
-	}
-
-	logs.Logger.Info().Msgf("Exec process returns: %+v", ci)
-
-	c.DockerLogsToHost()
-}
-
-// Write docker logs on the host terminal.
-func (c *ContainerManager) DockerLogsToHost() {
-	statusCh, errCh := c.cli.ContainerWait(c.ctx, c.containerID, container.WaitConditionNotRunning)
-	select {
-	case err := <-errCh:
-		if err != nil {
-			panic(err)
-		}
-	case <-statusCh:
-	}
-
-	out, err := c.cli.ContainerLogs(
-		c.ctx,
-		c.containerID,
-		types.ContainerLogsOptions{
-			ShowStdout: true,
-			Follow: true,
-		})
+func (c *ContainerManager) Shell() {
+	err := c.cli.ContainerStart(c.ctx, c.containerID, types.ContainerStartOptions{})
 	if err != nil {
 		panic(err)
 	}
 
-	stdcopy.StdCopy(os.Stdout, os.Stderr, out)
+	shell := exec.Command(fmt.Sprintf("docker exec -ti %s bash", c.containerName))
+	ok := fmt.Sprintf("docker exec -ti %s bash", c.containerName)
+	logs.Logger.Trace().Msg(ok)
+	logs.Logger.Info().Msgf("Interactive session.")
+	// Configuration de la sortie standard pour afficher les résultats de la commande
+	shell.Stdout = os.Stdout
+	shell.Stderr = os.Stderr
+	shell.Stdin = os.Stdin
+
+	// Exécution de la commande Docker
+	out, _ := shell.Output()
+	fmt.Println(out)
+
+	// Remove already existing container.
+	// err = c.cli.ContainerRemove(
+	// 	c.ctx,
+	// 	c.containerName,
+	// 	types.ContainerRemoveOptions{Force: true})
+	logs.Logger.Error().Err(err)
 }

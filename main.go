@@ -19,8 +19,6 @@ func main() {
 
 
 // A faire
-// Firnir contaier_manager.go
-// On veut creer un conteneur, lancer une commander dans le conteneur et afficher le résultat
-// sur le terminal.
-
-// Finir les LogLevel. root.go et logs.go
+// Continuer la commande shell :
+// go run . build --log error
+// go run . shell --log error

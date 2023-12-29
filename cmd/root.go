@@ -45,6 +45,7 @@ func init() {
 func Parse() error {
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(buildCmd)
+	rootCmd.AddCommand(shellCmd)
 	return rootCmd.Execute()
 }
 
