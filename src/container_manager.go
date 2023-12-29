@@ -128,7 +128,7 @@ func WithConfigYaml(configYamlPath string, containerName string, shell bool) Opt
 			)
 		case errdefs.ErrInvalidParameter:
 			logs.Logger.Error().Err(err).Msgf("Error type is %T", errorType)
-			logs.Logger.Debug().Msg("Adapt your volume mapping configuration to solve this issue")
+			logs.Logger.Debug().Msg("Adapt your volume mapping configuration to solve this issue.")
 		default:
 			logs.Logger.Error().Err(err).Msgf("Error type is %T", errorType)
 			panic(err)
@@ -230,7 +230,7 @@ func (c *ContainerManager) Shell() {
 		logs.Logger.Error().Err(err)
 	}
 
-	// Remove already existing container.
+	// Remove container once the interactive session finished.
 	err = c.cli.ContainerRemove(
 		c.ctx,
 		c.containerName,
