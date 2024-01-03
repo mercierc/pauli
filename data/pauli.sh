@@ -30,6 +30,10 @@ function inttests(){
     echo "inttests not implemented."
 }
 
+function staticanalysis(){
+    echo "staticanalysis not implemented."
+}
+
 # Common functions
 function fatal(){
 	echo -e "\e[1;4;97;48;5;9mFATAL: $1 \e[0m"

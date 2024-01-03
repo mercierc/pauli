@@ -20,7 +20,6 @@ var rootCmd = &cobra.Command{
 		// Initialize the logger.
 		logs.Init(logLevel, dev)
 	},
-
 	Version: "0.0.0",
 }
 
@@ -41,10 +40,10 @@ func init() {
 		"log", "info",
 		"Niveau de log (trace, debug, info, warn, error, panic)")
 }
+
 // Parse the command line.
 func Parse() error {
 	rootCmd.AddCommand(initCmd)
-	rootCmd.AddCommand(buildCmd)
 	rootCmd.AddCommand(shellCmd)
 	return rootCmd.Execute()
 }
