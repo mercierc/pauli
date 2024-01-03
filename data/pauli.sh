@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # User defined functions.
 
@@ -53,6 +53,8 @@ case $1 in
 		build ;;
 	run)
 	        run ;;
+	clean)
+	        clean ;;
 	unittests)
 		unittests "${@:2}" ;;
 	lint)
