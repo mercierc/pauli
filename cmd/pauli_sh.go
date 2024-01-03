@@ -14,7 +14,7 @@ var buildCmd = &cobra.Command{
 	Long: "Launch a build container and execute the build function " +
 		"from pauli.sh.",
 	Run: func(cmd *cobra.Command, args []string){
-		logs.Logger.Debug().Msgf("build %s", args)
+		logs.Logger.Debug().Msgf("pauli command %s", args)
 		logs.Logger.Debug().Msgf("--env=%s", envVars)
 		cm := src.NewContainerManager(
 			src.WithEnv(envVars),
@@ -32,7 +32,7 @@ var runCmd = &cobra.Command{
 	Long: "Launch a build container and execute the run function " +
 		"from pauli.sh.",
 	Run: func(cmd *cobra.Command, args []string){
-		logs.Logger.Debug().Msgf("build %s", args)
+		logs.Logger.Debug().Msgf("pauli command %s", args)
 		logs.Logger.Debug().Msgf("--env=%s", envVars)
 		cm := src.NewContainerManager(
 			src.WithEnv(envVars),
@@ -50,7 +50,7 @@ var cleanCmd = &cobra.Command{
 	Long: "Launch a build container and execute the clean function " +
 		"from pauli.sh.",
 	Run: func(cmd *cobra.Command, args []string){
-		logs.Logger.Debug().Msgf("build %s", args)
+		logs.Logger.Debug().Msgf("pauli command %s", args)
 		logs.Logger.Debug().Msgf("--env=%s", envVars)
 		cm := src.NewContainerManager(
 			src.WithEnv(envVars),
@@ -68,7 +68,7 @@ var lintCmd = &cobra.Command{
 	Long: "Launch a build container and execute the lint function " +
 		"from pauli.sh.",
 	Run: func(cmd *cobra.Command, args []string){
-		logs.Logger.Debug().Msgf("build %s", args)
+		logs.Logger.Debug().Msgf("pauli command %s", args)
 		logs.Logger.Debug().Msgf("--env=%s", envVars)
 		cm := src.NewContainerManager(
 			src.WithEnv(envVars),
@@ -86,7 +86,7 @@ var unittestsCmd = &cobra.Command{
 	Long: "Launch a build container and execute the unittests function " +
 		"from pauli.sh.",
 	Run: func(cmd *cobra.Command, args []string){
-		logs.Logger.Debug().Msgf("build %s", args)
+		logs.Logger.Debug().Msgf("pauli command %s", args)
 		logs.Logger.Debug().Msgf("--env=%s", envVars)
 		cm := src.NewContainerManager(
 			src.WithEnv(envVars),
@@ -104,7 +104,7 @@ var inttestsCmd = &cobra.Command{
 	Long: "Launch a build container and execute the inttests function " +
 		"from pauli.sh.",
 	Run: func(cmd *cobra.Command, args []string){
-		logs.Logger.Debug().Msgf("build %s", args)
+		logs.Logger.Debug().Msgf("pauli command %s", args)
 		logs.Logger.Debug().Msgf("--env=%s", envVars)
 		cm := src.NewContainerManager(
 			src.WithEnv(envVars),
@@ -122,7 +122,7 @@ var staticanalysisCmd = &cobra.Command{
 	Long: "Launch a build container and execute the staticanalysis function " +
 		"from pauli.sh.",
 	Run: func(cmd *cobra.Command, args []string){
-		logs.Logger.Debug().Msgf("build %s", args)
+		logs.Logger.Debug().Msgf("pauli command %s", args)
 		logs.Logger.Debug().Msgf("--env=%s", envVars)
 		cm := src.NewContainerManager(
 			src.WithEnv(envVars),
@@ -150,7 +150,8 @@ func init() {
 		staticanalysisCmd,
 	} {
 		c.Flags().StringArrayVarP(&envVars, "env",
-			"e", []string{}, "--env VAR1=VAR1 --env VAR2=VAR2")
+			"e", []string{}, "--env K11=V1 --env K2=V2")
+		
 		rootCmd.AddCommand(c)
 		
 	}

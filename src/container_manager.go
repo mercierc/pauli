@@ -4,6 +4,7 @@ import(
 	"context"
 	"os"
 	"os/exec"
+	"io"
 	
 	"gopkg.in/yaml.v2"
 	"github.com/docker/docker/client"
@@ -136,6 +137,16 @@ func WithConfigYaml(configYamlPath string, containerName string, shell bool) Opt
 		case errdefs.ErrInvalidParameter:
 			logs.Logger.Error().Err(err).Msgf("Error type is %T", errorType)
 			logs.Logger.Debug().Msg("Adapt your volume mapping configuration to solve this issue.")
+		case errdefs.ErrNotFound:
+			logs.Logger.Info().Msgf("%s image not present. Pull and retry ", conf.Image)
+			logs.Logger.Info().Msgf("Pull %s", conf.Image)
+			reader, _ := c.cli.ImagePull(
+				c.ctx,
+				conf.Image,
+				types.ImagePullOptions{},
+			)
+			io.Copy(os.Stdout, reader)
+			resp, err = c.cli.ContainerCreate(c.ctx, &conf, &confHost, nil, nil, c.containerName)
 		default:
 			logs.Logger.Error().Err(err).Msgf("Error type is %T", errorType)
 			panic(err)
@@ -218,6 +229,7 @@ func (c *ContainerManager) GetID() string {
 func (c *ContainerManager) Shell(shell string) {
 	err := c.cli.ContainerStart(c.ctx, c.containerID, types.ContainerStartOptions{})
 	if err != nil {
+		logs.Logger.Error().Err(err).Msgf("Error type is %T", err)
 		panic(err)
 	}
 

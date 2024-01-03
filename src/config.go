@@ -8,7 +8,6 @@ import(
 	"path/filepath"
 	"net/http"
 
-	//"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
 
@@ -57,9 +56,7 @@ name: {{ .ProjectName }}`
 	defer file.Close()
 	
 	// Download the raw pauli.sh file.
-	var resp *http.Response
-	go func(r *http.Response) {
-
+	go func() {
 		r, err := http.Get("https://github.com/mercierc/pauli/raw/main/data/pauli.sh")
 		if err != nil {
 			log.Error().Err(err)
@@ -71,8 +68,7 @@ name: {{ .ProjectName }}`
 		}
 		// Ensure the http body is close after the end of the function.
 		defer r.Body.Close()	
-
-	}(resp)
+	}()
 
 	i := Initiate{}
 	fmt.Printf("Project name (optional, cwd): ")
@@ -85,7 +81,6 @@ name: {{ .ProjectName }}`
 		i.ProjectName, _ = os.Getwd()
 		i.ProjectName = filepath.Base(i.ProjectName)
 	}
-	fmt.Printf("%+v", i)
 	
 	// Fill the config.tmpl
 	tmpl, err := template.New("config.tmpl").Parse(templateContent)
