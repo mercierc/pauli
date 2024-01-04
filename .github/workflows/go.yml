@@ -17,28 +17,28 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.21.1'
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21.1'
 
-    - name: Build
-      run: |
-        sed "s/x.x.x/${VERSION}/g" cmd/root.go
-        go build -v ./...
+      - name: Build
+        run: |
+          sed "s/x.x.x/${VERSION}/g" cmd/root.go
+          go build -v ./...
 
-    - name: Test
-      run: |
-        ./pauli --version
-        go test -v ./...
+      - name: Test
+        run: |
+          ./pauli --version
+          go test -v ./...
 
-    - name: Upload artifact
-      uses: actions/upload-artifact@v2
-      with:
-        name: pauli
-        path: pauli
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: pauli
+          path: pauli
 	
   release:
     runs-on: ubuntu-latest
