@@ -38,7 +38,7 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: pauli
-        path: ./pauli
+        path: pauli
 	
   release:
     runs-on: ubuntu-latest
