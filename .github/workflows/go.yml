@@ -31,8 +31,9 @@ jobs:
         go build -v ./...
 
     - name: Test
-      run: ./pauli --version
-      run: go test -v ./...
+      run: |
+        ./pauli --version
+        go test -v ./...
 
     - name: Upload artifact
       uses: actions/upload-artifact@v2
