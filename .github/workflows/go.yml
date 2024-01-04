@@ -6,6 +6,7 @@ name: Go
 
 env:
   VERSION: 0.0.0
+  
 on:
   push:
     branches: [ "main" ]
@@ -47,5 +48,5 @@ jobs:
     - name: Download artifact
       uses: actions/download-artifact@v2
       with:
-        name: pauli_${{ env.VERSION }}
+        name: pauli_$VERSION
 	path: .
