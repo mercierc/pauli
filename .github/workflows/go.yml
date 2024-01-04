@@ -3,6 +3,9 @@
 
 name: Go
 
+
+env:
+  VERSION: 0.0.0
 on:
   push:
     branches: [ "main" ]
@@ -22,7 +25,27 @@ jobs:
         go-version: '1.21.1'
 
     - name: Build
-      run: go build -v ./...
+      run: |
+        sed "s/x.x.x/${VERSION}/g" cmd/root.go
+        go build -v ./...
 
     - name: Test
+      run: ./pauli --version
       run: go test -v ./...
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: pauli_${{ env.VERSION }}
+	path: pauli
+
+  release:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'pull_request' && github.event.pull_request.merged && github.event.pull_request.base.ref == 'main'
+
+    - name: Download artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: pauli_${{ env.VERSION }}
+	path: .
