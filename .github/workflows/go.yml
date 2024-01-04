@@ -5,7 +5,7 @@ name: Go
 
 
 env:
-  VERSION: 0.0.0
+  VERSION: "0.0.0"
   
 on:
   push:
@@ -37,7 +37,7 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-artifact@v2
       with:
-        name: pauli_$VERSION
+        name: pauli-${{ env.VERSION }}
 	path: pauli
 
   release:
@@ -48,5 +48,5 @@ jobs:
     - name: Download artifact
       uses: actions/download-artifact@v2
       with:
-        name: pauli_$VERSION
+        name: pauli-${{ env.VERSION }}
 	path: .
