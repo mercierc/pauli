@@ -3,7 +3,6 @@
 
 name: Go
 
-
 env:
   VERSION: "0.0.0"
   
@@ -37,5 +36,5 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: pauli
+          name: pauli_v${{ env.VERSION }}
           path: pauli
