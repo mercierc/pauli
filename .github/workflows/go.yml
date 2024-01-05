@@ -26,11 +26,13 @@ jobs:
 
       - name: Build
         run: |
-          sed "s/x.x.x/${VERSION}/g" cmd/root.go
+          sed "s/x.x.x/${VERSION}/g" -i cmd/root.go
           go build -v ./...
+          ls
 
       - name: Test
         run: |
+          ls
           ./pauli --version
           go test -v ./...
 
