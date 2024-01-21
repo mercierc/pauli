@@ -13,7 +13,6 @@ import(
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/mount"
-	//"github.com/docker/docker/pkg/stdcopy"
 
 	"github.com/mercierc/pauli/logs"
 )
@@ -54,7 +53,6 @@ func WithCmd(cmd []string) Opt {
 		c.cmd = cmd
 	}
 }
-
 
 
 func WithEnv(env []string) Opt {
