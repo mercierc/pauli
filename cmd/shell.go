@@ -26,7 +26,7 @@ var shellCmd = &cobra.Command{
 		logs.Logger.Trace().Msgf("shell %s", args[0])
 		cm := src.NewContainerManager(
 			src.WithEntryPoint([]string{"sleep", "infinity"}),
-			src.WithConfigYaml(configPath, "pauli_build", true),
+			src.WithConfigYaml(configPath, true),
 		)
 		cm.Shell(args[0])
 	},

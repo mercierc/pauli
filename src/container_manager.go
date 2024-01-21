@@ -5,6 +5,7 @@ import(
 	"os"
 	"os/exec"
 	"io"
+	"time"
 	
 	"gopkg.in/yaml.v2"
 	"github.com/docker/docker/client"
@@ -12,7 +13,6 @@ import(
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/mount"
-	"github.com/docker/docker/pkg/stdcopy"
 
 	"github.com/mercierc/pauli/logs"
 )
@@ -34,6 +34,12 @@ type Opt func(*ContainerManager)
 // Intialize a container manager based on passed options.
 func NewContainerManager(options ...Opt) *ContainerManager {
 	c := &ContainerManager{exist: false}
+
+	c.ctx = context.Background()
+
+	// Initialize the docker client.
+	c.cli, _ = client.NewClientWithOpts()
+
 	for _, opt := range options {
 		opt(c)
 	}
@@ -49,12 +55,19 @@ func WithCmd(cmd []string) Opt {
 }
 
 
-
 func WithEnv(env []string) Opt {
 	return func(c *ContainerManager) {
 		c.env = env
 	}
 }
+
+
+func WithName(containerName string) Opt {
+	return func(c *ContainerManager) {
+		c.containerName = containerName
+	}
+}
+
 
 func WithEntryPoint(entryPoint []string) Opt {
 	return func(c *ContainerManager) {
@@ -65,10 +78,8 @@ func WithEntryPoint(entryPoint []string) Opt {
 
 // Intanciate the docker client and create the docker container based on the
 // config.yaml file.
-func WithConfigYaml(configYamlPath string, containerName string, shell bool) Opt {
+func WithConfigYaml(configYamlPath string, shell bool) Opt {
 	return func(c *ContainerManager) {
-		c.ctx = context.Background()
-		c.containerName = containerName
 		// Extract configuration from cofnfig.yaml.
 		content, err := os.ReadFile(configYamlPath)
 		
@@ -77,9 +88,6 @@ func WithConfigYaml(configYamlPath string, containerName string, shell bool) Opt
 			panic(err)
 		}
 		
-		// Initialize the docker client.
-		c.cli, err = client.NewClientWithOpts()
-
 		// Parse yaml config  file.
 		var confYaml Configuration
 		err = yaml.Unmarshal(content, &confYaml)
@@ -103,7 +111,7 @@ func WithConfigYaml(configYamlPath string, containerName string, shell bool) Opt
 		mounts[len(mounts)-1] = mount.Mount{
 			Source: cwd,
 			Target:"/app",
-			ReadOnly: true,
+			ReadOnly: false,
 			Type: "bind",
 		}
 		logs.Logger.Info().Msgf("%s mounted to %s with type %s",
@@ -116,14 +124,17 @@ func WithConfigYaml(configYamlPath string, containerName string, shell bool) Opt
 			AttachStdin: false,  // makes possible user interaction
 			AttachStdout: false,  // Attach the standard output
 			AttachStderr: false,  // Attach the standard error
-	                Tty: false,
+	                Tty: true,
 			Env: c.env, 
-			Cmd: c.cmd,  // Command to run when starting the container
+			Cmd: []string{"sleep", "infinity"},  //  Command to run when starting the container
 			Entrypoint: c.entryPoint,
 			Image: confYaml.Builder.Image + ":" + confYaml.Builder.Tag,
-			WorkingDir: "/app",  
+			WorkingDir: "/app",
 		}
-		confHost := container.HostConfig{Mounts: mounts}
+		privileged := false
+		privileged = privileged || confYaml.Builder.Privileged
+
+		confHost := container.HostConfig{Mounts: mounts, Privileged: privileged}
 
 		// Create a new valid container
 		resp, err := c.cli.ContainerCreate(c.ctx, &conf, &confHost, nil, nil, c.containerName)
@@ -158,32 +169,99 @@ func WithConfigYaml(configYamlPath string, containerName string, shell bool) Opt
 
 
 func (c *ContainerManager) Start() {
-	logs.Logger.Trace().Msgf("Start container %v", c.containerName)
+	logs.Logger.Trace().Msgf("Start container %v", c.containerName)	
 	
-	err := c.cli.ContainerStart(c.ctx, c.containerID, types.ContainerStartOptions{})
+	err := c.cli.ContainerStart(c.ctx, c.containerName, types.ContainerStartOptions{})
+	if err != nil {
+		panic(err)
+	}
+	//c.DockerLogsToHost()
+
+}
+
+func (c *ContainerManager) Exec() {
+	logs.Logger.Trace().Msgf("Exec command %v", c.cmd)
+	logs.Logger.Trace().Msgf("c.containerID %v", c.containerID)	
+	exec, err := c.cli.ContainerExecCreate(
+		c.ctx,
+		c.containerName,
+		types.ExecConfig{
+			AttachStdin: false,  // makes possible user interaction
+			AttachStdout: true,  // Attach the standard output
+			AttachStderr: true,  // Attach the standard error
+	                Tty: true,
+			Env: c.env, 
+			Cmd: c.cmd, //   Command to run when starting the container
+			WorkingDir: "/app",
+		},
+	)
+
+	if err != nil {
+		panic(err)
+	}	
+
+	hijack, err := c.cli.ContainerExecAttach(c.ctx, exec.ID, types.ExecStartCheck{})	
+
+	err = c.cli.ContainerExecStart(c.ctx, exec.ID, types.ExecStartCheck{Detach: false, Tty: false})
+
 	if err != nil {
 		panic(err)
 	}
 
-	c.DockerLogsToHost()
+	go func() {
+		defer hijack.Conn.Close()
+		io.Copy(os.Stdout, hijack.Reader)
+	}()
 	
-	// Remove already existing container.
-	err = c.cli.ContainerRemove(
-		c.ctx,
-		c.containerName,
-		types.ContainerRemoveOptions{Force: true})
-	logs.Logger.Error().Err(err)	
+	go func() {
+		for {
+			execInspect, err := c.cli.ContainerExecInspect(c.ctx, exec.ID)
+			logs.Logger.Trace().Msgf("Exec 'pauli %v' is running=%v", c.cmd[len(c.cmd)-1], execInspect.Running)	
+			if err != nil {
+				panic(err)
+			}
+
+			if !execInspect.Running {
+				break
+			}
+
+			time.Sleep(1 * time.Second)
+		}
+		timeout := 1
+		c.cli.ContainerStop(c.ctx, c.containerName, container.StopOptions{ Timeout: &timeout})
+		logs.Logger.Info().Msgf("Container %v is stopping", c.containerName)
+	}()
+	
+	c.DockerLogsToHost()
 }
 
 
 // Write docker logs on the host terminal.
 func (c *ContainerManager) DockerLogsToHost() {
+	out, err := c.cli.ContainerLogs(
+		c.ctx,
+		c.containerName,
+		types.ContainerLogsOptions{
+			ShowStdout: true,
+			Follow: true,
+			Timestamps: true,
+			Since: "0s",
+		})
+	if err != nil {
+		panic(err)
+	}
+
+	go func() {
+		defer out.Close()
+		io.Copy(os.Stdout, out)
+	}()
+
 	statusCh, errCh := c.cli.ContainerWait(
 		c.ctx,
-		c.containerID,
+		c.containerName,
 		container.WaitConditionNotRunning,
 	)
-
+	
 	select {
 	case err := <-errCh:
 		if err != nil {
@@ -191,19 +269,6 @@ func (c *ContainerManager) DockerLogsToHost() {
 		}
 	case <-statusCh:
 	}
-	
-	out, err := c.cli.ContainerLogs(
-		c.ctx,
-		c.containerID,
-		types.ContainerLogsOptions{
-			ShowStdout: true,
-			Follow: true,
-		})
-	if err != nil {
-		panic(err)
-	}
-
-	stdcopy.StdCopy(os.Stdout, os.Stderr, out)
 }
 
 
@@ -233,7 +298,7 @@ func (c *ContainerManager) Shell(shell string) {
 		panic(err)
 	}
 
-	cmd := exec.Command("docker", "exec", "-ti", c.containerName, shell)
+	cmd := exec.Command("docker", "exec", "--privileged", "-ti", c.containerName, shell)
 
 	logs.Logger.Info().Msgf("Interactive session >>>")
 
@@ -254,4 +319,22 @@ func (c *ContainerManager) Shell(shell string) {
 		c.containerName,
 		types.ContainerRemoveOptions{Force: true})
 	logs.Logger.Error().Err(err)
+}
+
+
+func GetID(containerName string) string {
+
+	cli, _ := client.NewClientWithOpts()
+	containers,  _ := cli.ContainerList(context.Background(),
+		types.ContainerListOptions{
+			All: true,
+		})
+	for _, container := range containers {
+		// If same container found, remove it.
+		if container.Names[0][1:] == containerName {
+			return container.ID
+		}
+	}
+	logs.Logger.Debug().Msgf("Container %s not found.", containerName)
+	return ""
 }

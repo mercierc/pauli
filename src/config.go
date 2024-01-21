@@ -21,7 +21,7 @@ type Configuration struct {
 	Builder struct {
 		Image   string `yaml:"image"`
 		Tag     string `yaml:"tag"`
-		UseSudo bool   `yaml:"use_sudo"`
+		Privileged bool   `yaml:"privileged"`
 		Volumes []Volume `yaml:"volumes"`
 	} `yaml:"builder"`
 	Name string `yaml:"name"`
@@ -32,8 +32,8 @@ func InitiateProject() error {
 
 	templateContent :=`builder:
   image: {{ if .BuildImage }}{{ .BuildImage }}{{ else }}<image_name>{{ end }}
-  use_sudo: true
   tag: {{ if .Tag }}{{ .Tag }}{{ else }}latest{{ end }}
+  privileged: true
   volumes:
     - type: bind
       source: /var/run/docker.sock
