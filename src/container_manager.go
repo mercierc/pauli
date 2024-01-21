@@ -10,15 +10,33 @@ import(
 	"gopkg.in/yaml.v2"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/errdefs"
-	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/network"
+	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/docker/docker/api/types/mount"
 
 	"github.com/mercierc/pauli/logs"
 )
 
+type DockerClient interface {
+	ContainerCreate(ctx context.Context, config *container.Config, hostConfig *container.HostConfig, networkingConfig *network.NetworkingConfig, platform *ocispec.Platform, containerName string) (container.CreateResponse, error)
+	ImagePull(ctx context.Context, refStr string, options types.ImagePullOptions) (io.ReadCloser, error)
+	ContainerStart(ctx context.Context, containerID string, options container.StartOptions) error
+	ContainerExecCreate(ctx context.Context, container string, config types.ExecConfig) (types.IDResponse, error)
+	ContainerExecAttach(ctx context.Context, execID string, config types.ExecStartCheck) (types.HijackedResponse, error)
+	ContainerExecStart(ctx context.Context, execID string, config types.ExecStartCheck) error
+	ContainerExecInspect(ctx context.Context, execID string) (types.ContainerExecInspect, error)
+	ContainerStop(ctx context.Context, containerID string, options container.StopOptions) error
+	ContainerLogs(ctx context.Context, container string, options container.LogsOptions) (io.ReadCloser, error)
+	ContainerWait(ctx context.Context, containerID string, condition container.WaitCondition) (<-chan container.WaitResponse, <-chan error)
+	ContainerList(ctx context.Context, options container.ListOptions) ([]types.Container, error)
+	ContainerRemove(ctx context.Context, containerID string, options container.RemoveOptions) error
+}
+
+
 type ContainerManager struct {
-	cli *client.Client // docker client
+	cli DockerClient // docker client
 	ctx context.Context
 	containerID string
 	containerName string
