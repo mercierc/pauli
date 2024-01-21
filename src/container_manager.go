@@ -24,7 +24,6 @@ type ContainerManager struct {
 	containerName string
 	cmd []string
 	entryPoint []string
-	exist bool
 	env []string
 }
 
@@ -33,7 +32,7 @@ type Opt func(*ContainerManager)
 
 // Intialize a container manager based on passed options.
 func NewContainerManager(options ...Opt) *ContainerManager {
-	c := &ContainerManager{exist: false}
+	c := &ContainerManager{}
 
 	c.ctx = context.Background()
 
