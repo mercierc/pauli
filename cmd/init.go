@@ -17,7 +17,6 @@ var initCmd = &cobra.Command{
                 "  - pauli.sh: A shell file with predefined commun functions " +
 		"to populate.",
 	Run: func(cmd *cobra.Command, arg []string){
-		downloaded := make(chan bool)
-		src.InitiateProject(os.Stdin, downloaded)
+		src.InitiateProject(os.Stdin)
 	},
 }

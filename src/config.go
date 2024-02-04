@@ -44,7 +44,7 @@ name: {{ .ProjectName }}`
 // Create the .pauli folder with config.yaml and download pauli.sh
 // reader: Allow to read from different inputs.
 
-func InitiateProject(reader io.Reader, downloaded chan bool) error {
+func InitiateProject(reader io.Reader) error {
 	templateContent :=`builder:
   image: {{ if .BuildImage }}{{ .BuildImage }}{{ else }}<image_name>{{ end }}
   tag: {{ if .Tag }}{{ .Tag }}{{ else }}latest{{ end }}
@@ -71,6 +71,7 @@ name: {{ .ProjectName }}`
 	defer file.Close()
 
 	// Download the raw pauli.sh file.
+	downloaded := make(chan bool)
 	go func() {
 		r, err := http.Get("https://github.com/mercierc/pauli/raw/main/data/pauli.sh")
 		if err != nil {
@@ -93,16 +94,14 @@ name: {{ .ProjectName }}`
 
 	scanner := bufio.NewScanner(reader)
 	fmt.Printf("Project name (optional, cwd): ")
-	//fmt.Scanln(&i.ProjectName
 	scanner.Scan()
 	i.ProjectName = scanner.Text()
+
 	fmt.Printf("Name of the build image (optional, <image_name>): ")
-	//fmt.Scanln(&i.BuildImage)
 	scanner.Scan()
 	i.BuildImage = scanner.Text()
 
 	fmt.Printf("tag (optional, latest): ")
-	//fmt.Scanln(&i.Tag)
 	scanner.Scan()
 	i.Tag = scanner.Text()
 
