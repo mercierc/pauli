@@ -36,7 +36,7 @@ type DockerClient interface {
 
 
 type ContainerManager struct {
-	cli DockerClient // docker client
+	cli *client.Client // docker client
 	ctx context.Context
 	containerID string
 	containerName string

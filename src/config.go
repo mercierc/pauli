@@ -17,13 +17,15 @@ type Volume struct {
 	Target string `yaml:"target"`
 }
 
+type Builder struct {
+	Image   string `yaml:"image"`
+	Tag     string `yaml:"tag"`
+	Privileged bool   `yaml:"privileged"`
+	Volumes []Volume `yaml:"volumes"`
+}
+	
 type Configuration struct {
-	Builder struct {
-		Image   string `yaml:"image"`
-		Tag     string `yaml:"tag"`
-		Privileged bool   `yaml:"privileged"`
-		Volumes []Volume `yaml:"volumes"`
-	} `yaml:"builder"`
+	Builder Builder `yaml:"builder"`
 	Name string `yaml:"name"`
 }
 
