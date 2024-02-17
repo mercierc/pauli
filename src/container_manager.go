@@ -162,6 +162,8 @@ func WithConfigYaml(configYamlPath string, shell bool) Opt {
 				c.containerName,
 				resp.ID[:10],
 			)
+		case errdefs.ErrConflict:
+			logs.Logger.Debug().Msg("Container already exists.")
 		case errdefs.ErrInvalidParameter:
 			logs.Logger.Error().Err(err).Msgf("Error type is %T", errorType)
 			logs.Logger.Debug().Msg("Adapt your volume mapping configuration to solve this issue.")
@@ -179,7 +181,6 @@ func WithConfigYaml(configYamlPath string, shell bool) Opt {
 			logs.Logger.Error().Err(err).Msgf("Error type is %T", errorType)
 			panic(err)
 		}
-		
 		c.containerID = resp.ID	
 	}
 }
@@ -309,7 +310,7 @@ func (c *ContainerManager) GetID() string {
 
 // Execute a command on an already existing container.
 func (c *ContainerManager) Shell(shell string) {
-	err := c.cli.ContainerStart(c.ctx, c.containerID, types.ContainerStartOptions{})
+	err := c.cli.ContainerStart(c.ctx, c.containerName, types.ContainerStartOptions{})
 	if err != nil {
 		logs.Logger.Error().Err(err).Msgf("Error type is %T", err)
 		panic(err)

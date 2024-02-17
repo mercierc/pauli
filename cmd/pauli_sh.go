@@ -18,28 +18,16 @@ func commonRun(cmd *cobra.Command, args []string) {
 
 	var cm *src.ContainerManager
 	
-	// Extract container name from the currebt folder
+	// Extract container name from the current folder
 	containerName, _ := os.Getwd()
-	containerName = filepath.Base(containerName) + "_xxXx"
-	
-	ID := src.GetID(containerName)
-	logs.Logger.Trace().Msgf("ID %v", ID)	
-	if ID == "" {
-		logs.Logger.Info().Msgf("Create container %v from config.yaml", containerName)	
-		cm = src.NewContainerManager(
-			src.WithName(containerName),
-			src.WithEnv(envVars),
-			src.WithConfigYaml(configPath, false),
-			src.WithCmd(append([]string{"/bin/sh", ".pauli/pauli.sh", currentCmd}, args...)),
-		)
-	} else {
-		logs.Logger.Info().Msgf("Use already existing %s container", containerName)	
-		cm = src.NewContainerManager(
-			src.WithName(containerName),
-			src.WithEnv(envVars),
-			src.WithCmd(append([]string{"/bin/sh", ".pauli/pauli.sh", currentCmd}, args...)),
-		)
-	}
+	containerName = filepath.Base(containerName) + "_build"
+
+	cm = src.NewContainerManager(
+		src.WithName(containerName),
+		src.WithEnv(envVars),
+		src.WithConfigYaml(configPath, false),
+		src.WithCmd(append([]string{"/bin/sh", ".pauli/pauli.sh", currentCmd}, args...)),
+	)
 	cm.Start()
 	cm.Exec()
 }
@@ -129,6 +117,34 @@ var staticanalysisCmd = &cobra.Command{
 }
 
 
+var shellCmd = &cobra.Command{
+	Use: "shell",
+	Short: "Interactive session in the build image that take your " +
+	"config.yml file into account.",
+	Long: "Launch an interacive shell in the build container as you would " +
+		"do it with the -it option. The first argument allows to " +
+		"choose between sh and bash. By default sh\n" +
+		"Example: pauli shell [sh|bash]",
+	Args: cobra.MaximumNArgs(1),
+	ValidArgs: []string{"sh", "bash"},
+	Run: func(cmd *cobra.Command, args []string){
+		if len(args)==0 {
+			args = []string{"sh"}
+		}
+		containerName, _ := os.Getwd()
+		containerName = filepath.Base(containerName) + "_build"
+
+		logs.Logger.Trace().Msgf("shell %s", args[0])
+		cm := src.NewContainerManager(
+			src.WithName(containerName),
+			src.WithEntryPoint([]string{"sleep", "infinity"}),
+			src.WithConfigYaml(configPath, true),
+		)
+		cm.Shell(args[0])
+	},
+}
+
+
 var(
 	envVars []string
 )
@@ -143,6 +159,7 @@ func init() {
 		unittestsCmd,
 		inttestsCmd,
 		staticanalysisCmd,
+		shellCmd,
 	} {
 		c.Flags().StringArrayVarP(&envVars, "env",
 			"e", []string{}, "--env K11=V1 --env K2=V2")
