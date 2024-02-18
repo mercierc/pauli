@@ -2,6 +2,7 @@ package logs
 
 import(
 	"os"
+	"time"
 
 	"github.com/rs/zerolog"
 )
@@ -25,10 +26,11 @@ func Init(logLevel string, dev bool) {
 		cw := zerolog.ConsoleWriter{
 			Out: os.Stderr,
 			NoColor: false,
+			TimeFormat: time.TimeOnly, // "15:04:05"
 		}
-		Logger = zerolog.New(cw).Level(logLevelMap[logLevel])
+		Logger = zerolog.New(cw).Level(logLevelMap[logLevel]).With().Timestamp().Logger()
 		
 	} else {
-		Logger = zerolog.New(os.Stderr).Level(logLevelMap[logLevel])
+		Logger = zerolog.New(os.Stderr).Level(logLevelMap[logLevel]).With().Timestamp().Caller().Logger()
 	}
 }

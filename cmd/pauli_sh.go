@@ -10,7 +10,11 @@ import(
 	"github.com/mercierc/pauli/logs"
 )
 
-var currentCmd string
+var(
+	envVars []string
+	currentCmd string
+)
+
 
 func commonRun(cmd *cobra.Command, args []string) {
 	logs.Logger.Debug().Msgf("pauli command %s", args)
@@ -137,33 +141,10 @@ var shellCmd = &cobra.Command{
 		logs.Logger.Trace().Msgf("shell %s", args[0])
 		cm := src.NewContainerManager(
 			src.WithName(containerName),
-			src.WithEntryPoint([]string{"sleep", "infinity"}),
+			src.WithEnv(envVars),
+			src.WithEntryPoint([]string{"tail", "-f", "/dev/null"}),
 			src.WithConfigYaml(configPath, true),
 		)
 		cm.Shell(args[0])
 	},
-}
-
-
-var(
-	envVars []string
-)
-
-
-func init() {
-	for _, c := range []*cobra.Command{
-		buildCmd,
-		runCmd,
-		cleanCmd,
-		lintCmd,
-		unittestsCmd,
-		inttestsCmd,
-		staticanalysisCmd,
-		shellCmd,
-	} {
-		c.Flags().StringArrayVarP(&envVars, "env",
-			"e", []string{}, "--env K11=V1 --env K2=V2")
-		
-		rootCmd.AddCommand(c)		
-	}
 }
