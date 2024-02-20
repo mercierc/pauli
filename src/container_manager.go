@@ -10,12 +10,13 @@ import(
 	"gopkg.in/yaml.v2"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/errdefs"
-	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 
 	"github.com/mercierc/pauli/logs"
 )
+
 
 type ContainerManager struct {
 	cli *client.Client // docker client
@@ -144,11 +145,16 @@ func WithConfigYaml(configYamlPath string, shell bool) Opt {
 				c.containerName,
 				resp.ID[:10],
 			)
+
+		case errdefs.ErrConflict:
+			// If the container already exists, use it.
+			logs.Logger.Info().Msg("Container already exists.")
+
 		case errdefs.ErrInvalidParameter:
 			logs.Logger.Error().Err(err).Msgf("Error type is %T", errorType)
-			logs.Logger.Debug().Msg("Adapt your volume mapping configuration to solve this issue.")
+			logs.Logger.Info().Msg("Adapt your volume mapping configuration to solve this issue.")
+
 		case errdefs.ErrNotFound:
-			logs.Logger.Info().Msgf("%s image not present. Pull and retry ", conf.Image)
 			logs.Logger.Info().Msgf("Pull %s", conf.Image)
 			reader, _ := c.cli.ImagePull(
 				c.ctx,
@@ -157,11 +163,11 @@ func WithConfigYaml(configYamlPath string, shell bool) Opt {
 			)
 			io.Copy(os.Stdout, reader)
 			resp, err = c.cli.ContainerCreate(c.ctx, &conf, &confHost, nil, nil, c.containerName)
+
 		default:
-			logs.Logger.Error().Err(err).Msgf("Error type is %T", errorType)
+			logs.Logger.Error().Err(err).Msgf("Error in WithConfigYaml(), errytype is %T", errorType)
 			panic(err)
 		}
-		
 		c.containerID = resp.ID	
 	}
 }
@@ -174,8 +180,6 @@ func (c *ContainerManager) Start() {
 	if err != nil {
 		panic(err)
 	}
-	//c.DockerLogsToHost()
-
 }
 
 func (c *ContainerManager) Exec() {
@@ -271,33 +275,25 @@ func (c *ContainerManager) DockerLogsToHost() {
 }
 
 
-// Extract ID of the container if exists.
-func (c *ContainerManager) GetID() string {
-
-	containers,  _ := c.cli.ContainerList(context.Background(),
-		types.ContainerListOptions{
-			All: true,
-		})
-	for _, container := range containers {
-		// If same container found, remove it.
-		if container.Names[0][1:] == c.containerName {
-			return container.ID
-		}
-	}
-	logs.Logger.Debug().Msgf("Container %s not found.", c.containerName)
-	return ""
-}
-
-
 // Execute a command on an already existing container.
 func (c *ContainerManager) Shell(shell string) {
-	err := c.cli.ContainerStart(c.ctx, c.containerID, types.ContainerStartOptions{})
+	err := c.cli.ContainerStart(c.ctx, c.containerName, types.ContainerStartOptions{})
 	if err != nil {
 		logs.Logger.Error().Err(err).Msgf("Error type is %T", err)
 		panic(err)
 	}
 
-	cmd := exec.Command("docker", "exec", "--privileged", "-ti", c.containerName, shell)
+	
+	args := []string{"docker", "exec", "--privileged", "-ti"}
+
+	// Add env variables.
+	for i := 0; i<len(c.env); i++ {
+		args = append(args, "--env", c.env[i])
+	}
+
+	args = append(args, c.containerName, shell)
+
+	cmd := exec.Command(args[0], args[1:]...)
 
 	logs.Logger.Info().Msgf("Interactive session >>>")
 
@@ -313,27 +309,10 @@ func (c *ContainerManager) Shell(shell string) {
 	}
 
 	// Remove container once the interactive session is finished.
-	err = c.cli.ContainerRemove(
+	err = c.cli.ContainerStop(
 		c.ctx,
 		c.containerName,
-		types.ContainerRemoveOptions{Force: true})
+		container.StopOptions{Signal: "SIGKILL"})
+	logs.Logger.Info().Msgf("Stop %s container", c.containerName)
 	logs.Logger.Error().Err(err)
-}
-
-
-func GetID(containerName string) string {
-
-	cli, _ := client.NewClientWithOpts()
-	containers,  _ := cli.ContainerList(context.Background(),
-		types.ContainerListOptions{
-			All: true,
-		})
-	for _, container := range containers {
-		// If same container found, remove it.
-		if container.Names[0][1:] == containerName {
-			return container.ID
-		}
-	}
-	logs.Logger.Debug().Msgf("Container %s not found.", containerName)
-	return ""
 }

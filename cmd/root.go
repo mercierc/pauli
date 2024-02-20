@@ -44,7 +44,23 @@ func init() {
 // Parse the command line.
 func Parse() error {
 	rootCmd.AddCommand(initCmd)
-	rootCmd.AddCommand(shellCmd)
+
+	// Add all the commands defined in pau_sh.go
+	for _, c := range []*cobra.Command{
+		buildCmd,
+		runCmd,
+		cleanCmd,
+		lintCmd,
+		unittestsCmd,
+		inttestsCmd,
+		staticanalysisCmd,
+		shellCmd,
+	} {
+		c.Flags().StringArrayVarP(&envVars, "env",
+			"e", []string{}, "--env K11=V1 --env K2=V2")
+		
+		rootCmd.AddCommand(c)
+	}
 	return rootCmd.Execute()
 }
 

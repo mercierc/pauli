@@ -4,11 +4,11 @@ import(
 	"os"
 	"fmt"
 	"text/template"
+	"bufio"
 	"io"
 	"path/filepath"
 	"net/http"
-
-	"github.com/rs/zerolog/log"
+	"github.com/mercierc/pauli/logs"
 )
 
 type Volume struct { 
@@ -17,19 +17,34 @@ type Volume struct {
 	Target string `yaml:"target"`
 }
 
+type Builder struct {
+	Image   string `yaml:"image"`
+	Tag     string `yaml:"tag"`
+	Privileged bool   `yaml:"privileged"`
+	Volumes []Volume `yaml:"volumes"`
+}
+	
 type Configuration struct {
-	Builder struct {
-		Image   string `yaml:"image"`
-		Tag     string `yaml:"tag"`
-		Privileged bool   `yaml:"privileged"`
-		Volumes []Volume `yaml:"volumes"`
-	} `yaml:"builder"`
+	Builder Builder `yaml:"builder"`
 	Name string `yaml:"name"`
 }
 
+var(
+	templateContent =`builder:
+  image: {{ if .BuildImage }}{{ .BuildImage }}{{ else }}<image_name>{{ end }}
+  tag: {{ if .Tag }}{{ .Tag }}{{ else }}latest{{ end }}
+  privileged: true
+  volumes:
+    - type: bind
+      source: /var/run/docker.sock
+      target: /var/run/docker.sock
+name: {{ .ProjectName }}`
+)
 
-func InitiateProject() error {
+// Create the .pauli folder with config.yaml and download pauli.sh
+// reader: Allow to read from different inputs.
 
+func InitiateProject(reader io.Reader) error {
 	templateContent :=`builder:
   image: {{ if .BuildImage }}{{ .BuildImage }}{{ else }}<image_name>{{ end }}
   tag: {{ if .Tag }}{{ .Tag }}{{ else }}latest{{ end }}
@@ -46,42 +61,55 @@ name: {{ .ProjectName }}`
 
 	// Create the .pauli folder.
 	if err := os.Mkdir(".pauli", os.ModePerm); err != nil {
-		log.Error().Err(err)
+		logs.Logger.Error().Err(err).Msg("error")
 	}
 	// Create the pauli.sh file.
 	file, err := os.Create(".pauli/pauli.sh")
 	if err != nil {
-		log.Error().Err(err)
+		logs.Logger.Error().Err(err).Msg("error")
 	}
 	defer file.Close()
-	
+
 	// Download the raw pauli.sh file.
+	downloaded := make(chan bool)
 	go func() {
 		r, err := http.Get("https://github.com/mercierc/pauli/raw/main/data/pauli.sh")
 		if err != nil {
-			log.Error().Err(err)
+			logs.Logger.Error().Err(err).Msg("error")
 		}
 
 		// Write the body in the pauli.sh file	
 		if _, err := io.Copy(file, r.Body); err != nil {
-			log.Error().Err(err)
+			logs.Logger.Error().Err(err).Msg("error")
 		}
 		// Ensure the http body is close after the end of the function.
-		defer r.Body.Close()	
+		defer r.Body.Close()
+
+		downloaded <- true
+		logs.Logger.Info().Msg("pauli.sh downloaded")
 	}()
 
 	i := Initiate{}
+
+
+	scanner := bufio.NewScanner(reader)
 	fmt.Printf("Project name (optional, cwd): ")
-	fmt.Scanln(&i.ProjectName)
+	scanner.Scan()
+	i.ProjectName = scanner.Text()
+
 	fmt.Printf("Name of the build image (optional, <image_name>): ")
-	fmt.Scanln(&i.BuildImage)
+	scanner.Scan()
+	i.BuildImage = scanner.Text()
+
 	fmt.Printf("tag (optional, latest): ")
-	fmt.Scanln(&i.Tag)
+	scanner.Scan()
+	i.Tag = scanner.Text()
+
 	if i.ProjectName == "" {
 		i.ProjectName, _ = os.Getwd()
 		i.ProjectName = filepath.Base(i.ProjectName)
 	}
-	
+
 	// Fill the config.tmpl
 	tmpl, err := template.New("config.tmpl").Parse(templateContent)
 	if err != nil {
@@ -94,6 +122,6 @@ name: {{ .ProjectName }}`
 	if err != nil {
 		panic(err)
 	}
-
+	logs.Logger.Info().Msgf("pauli.sh downloaded: %t", <-downloaded)
 	return nil
 }

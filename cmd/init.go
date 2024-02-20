@@ -1,7 +1,7 @@
 package cmd
 
 import(
-	
+	"os"
 	"github.com/spf13/cobra"
 
 	"github.com/mercierc/pauli/src"
@@ -17,6 +17,6 @@ var initCmd = &cobra.Command{
                 "  - pauli.sh: A shell file with predefined commun functions " +
 		"to populate.",
 	Run: func(cmd *cobra.Command, arg []string){
-		src.InitiateProject()
+		src.InitiateProject(os.Stdin)
 	},
 }
