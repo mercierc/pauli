@@ -2,69 +2,138 @@ package cmd
 
 import(
 	"testing"
-	"fmt"
 	"os"
 	"io/ioutil"
-	"gopkg.in/yaml.v2"
-
-	"github.com/mercierc/pauli/logs"
-	"github.com/mercierc/pauli/src"
+	"fmt"
+	"io"
+	"strings"
 )
 
 
-func TestCLIinit(t *testing.T) {
 
-	// Read inputs from temporary file
-	file, err := ioutil.TempFile("/tmp", "test")
-	defer file.Close()
-	if err != nil {
-		logs.Logger.Error().Err(err).Msg("error")	
-	}
-
-	// Write and replace the cursor at the begining of the file
-	_, err = file.WriteString("War\nAnd\nPeace")
-	file.Seek(0, 0)
-
-	rootCmd.AddCommand(initCmd)
-	rootCmd.SetArgs([]string{"init"})
-
-
-	_, err = os.Stat(".pauli")
+func CopyFile(sourceFile string, destinationFile string) {
+	input, err := ioutil.ReadFile(sourceFile)
+        if err != nil {
+                fmt.Println(err)
+                return
+        }
 	
-	if os.IsNotExist(err) {
-	        t.Fatalf(".pauli folder does not exist %v", err)
-	}
-
-	// Load template from config.yaml
-	content, err := os.ReadFile(".pauli/config.yaml")
-	// Parse yaml config  file.
-	var confYaml src.Configuration
-	err = yaml.Unmarshal(content, &confYaml)
-
-	if (
-		confYaml.Name != "War" ||
-		confYaml.Builder.Image != "And" ||
-		confYaml.Builder.Tag != "Peace") {
-		
-		t.Fatal("Input for config.yaml are wrong.")
-	}
-	fmt.Printf("%+v", confYaml)
+        err = ioutil.WriteFile(destinationFile, input, 0644)
+        if err != nil {
+                fmt.Println("Error creating", destinationFile)
+                fmt.Println(err)
+                return
+        }
 }
 
-// func TestCLIbuild(t *testing.T) {
-// 	rootCmd.SetArgs([]string{"build"})
-// 	rootCmd.Execute()
-// }
 
-// func TestCLIclean(t *testing.T) {
-// 	t.Parallel()
-// 	rootCmd.SetArgs([]string{"clean"})
-// 	rootCmd.Execute()
-// }
+func CallPauliDotShFunc(command string) int { 
+	// Capture stdout to see if the command in pauli.sh file has been called.
+	oldStdout := os.Stdout
 
-// func TestCLIrun(t *testing.T) {
-// 	t.Parallel()
-// 	rootCmd.SetArgs([]string{"run"})
-// 	rootCmd.Execute()
-// }
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+	
+	rootCmd.SetArgs([]string{command})
+	rootCmd.Execute()
 
+	w.Close()
+	out, _ := io.ReadAll(r)
+	os.Stdout = oldStdout
+
+	return strings.Count(string(out), command)
+}
+
+
+func TestMain(m *testing.M) {
+	Parse()
+	os.Mkdir(".pauli", 0777)
+	CopyFile("../data/pauli.sh", ".pauli/pauli.sh")
+	CopyFile("../data/config.yaml", ".pauli/config.yaml")
+
+	// Exécuter les tests
+	exitCode := m.Run()
+	os.RemoveAll(".pauli")
+	os.Exit(exitCode)
+}
+
+
+// Ensure the build command in pauli.sh file has been called.
+func TestCLIbuild(t *testing.T) {
+	command := "build"
+	if CallPauliDotShFunc(command)!= 1 {
+		t.Fatal(command, "never called in pauli.sh")
+	}	
+}
+
+
+// Ensure the run command in pauli.sh file has been called.
+func TestCLIrun(t *testing.T) {
+	command := "run"
+	if CallPauliDotShFunc(command)!= 1 {
+		t.Fatal(command, "never called in pauli.sh")
+	}	
+}
+
+
+// Ensure the clean command in pauli.sh file has been called.
+func TestCLIClean(t *testing.T) {
+	command := "clean"
+	if CallPauliDotShFunc(command)!= 1 {
+		t.Fatal(command, "never called in pauli.sh")
+	}	
+}
+
+
+// Ensure the unittests command in pauli.sh file has been called.
+func TestCLIunittests(t *testing.T) {
+	command := "unittests"
+	if CallPauliDotShFunc(command)!= 1 {
+		t.Fatal(command, "never called in pauli.sh")
+	}	
+}
+
+
+// Ensure the inttests command in pauli.sh file has been called.
+func TestCLIinttests(t *testing.T) {
+	command := "inttests"
+	if CallPauliDotShFunc(command)!= 1 {
+		t.Fatal(command, "never called in pauli.sh")
+	}	
+}
+
+
+// Ensure the staticanalysis command in pauli.sh file has been called.
+func TestCLIstaticanalysis(t *testing.T) {
+	command := "staticanalysis"
+	if CallPauliDotShFunc(command)!= 1 {
+		t.Fatal(command, "never called in pauli.sh")
+	}	
+}
+
+
+// Ensure config.yaml and pauli.sh are present.
+// Let src/config_test.go TestInitiateProject to verify if the project is
+// correctly initialized
+func TestCLIinit(t *testing.T) {
+
+
+	rootCmd.SetArgs([]string{"init"})
+	rootCmd.Execute()
+
+	f1, err_sh := os.Open(".pauli/pauli.sh")
+	f2, err_yaml := os.Open(".pauli/config.yaml")
+
+	if os.IsNotExist(err_sh) || os.IsNotExist(err_yaml) {
+		t.Fatal("\n",
+			err_sh,
+			"\n",
+			err_yaml)
+	}
+
+	// Clean
+	t.Cleanup(func() {
+		f1.Close()
+		f2.Close()
+	})
+}

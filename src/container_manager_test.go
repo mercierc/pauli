@@ -14,7 +14,7 @@ import(
 
 // This test the most important Opt. It creates a container from the config.yaml
 // file and test that the created container is well configured.
-func  TestNewContainerManager(t *testing.T) {
+func TestNewContainerManager(t *testing.T) {
 
 	logs.Init("trace", true)
 	config := Configuration{
