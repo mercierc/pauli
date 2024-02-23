@@ -60,8 +60,6 @@ func TestNewContainerManager(t *testing.T) {
 	// that the config is correct
 	json, err := cm.cli.ContainerInspect(cm.ctx, cm.containerName)
 
-	fmt.Printf("json: %+v", json)
-	fmt.Printf("Mounts %+v", json.Mounts)
 	// Check mounted volumes
 	cwd, err := os.Getwd()
 
