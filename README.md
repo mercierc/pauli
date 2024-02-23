@@ -1,4 +1,4 @@
-PAULI
+Pauli
 =====
 
 Description
@@ -51,10 +51,12 @@ function run(){
 ```
 That's all! You can now build and run your executable in a build container undner a golang:alpine image:
 `pauli build`
+
  and then run it:
 `pauli run --env WHO=GO`
-run it
+
 ```
 run 
 Hello, GO!
 ```
+Note that we can pass environement variables as we would do with docker.
