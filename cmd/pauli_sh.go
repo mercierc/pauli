@@ -142,7 +142,6 @@ var shellCmd = &cobra.Command{
 		cm := src.NewContainerManager(
 			src.WithName(containerName),
 			src.WithEnv(envVars),
-			src.WithEntryPoint([]string{"tail", "-f", "/dev/null"}),
 			src.WithConfigYaml(configPath, true),
 		)
 		cm.Shell(args[0])
