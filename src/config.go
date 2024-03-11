@@ -1,36 +1,36 @@
 package src
 
-import(
-	"os"
-	"fmt"
-	"text/template"
+import (
 	"bufio"
-	"io"
-	"path/filepath"
-	"net/http"
+	"fmt"
 	"github.com/mercierc/pauli/logs"
+	"io"
+	"net/http"
+	"os"
+	"path/filepath"
+	"text/template"
 )
 
-type Volume struct { 
+type Volume struct {
 	Type   string `yaml:"type"`
 	Source string `yaml:"source"`
 	Target string `yaml:"target"`
 }
 
 type Builder struct {
-	Image   string `yaml:"image"`
-	Tag     string `yaml:"tag"`
-	Privileged bool   `yaml:"privileged"`
-	Volumes []Volume `yaml:"volumes"`
-}
-	
-type Configuration struct {
-	Builder Builder `yaml:"builder"`
-	Name string `yaml:"name"`
+	Image      string   `yaml:"image"`
+	Tag        string   `yaml:"tag"`
+	Privileged bool     `yaml:"privileged"`
+	Volumes    []Volume `yaml:"volumes"`
 }
 
-var(
-	templateContent =`builder:
+type Configuration struct {
+	Builder Builder `yaml:"builder"`
+	Name    string  `yaml:"name"`
+}
+
+var (
+	templateContent = `builder:
   image: {{ if .BuildImage }}{{ .BuildImage }}{{ else }}<image_name>{{ end }}
   tag: {{ if .Tag }}{{ .Tag }}{{ else }}latest{{ end }}
   privileged: true
@@ -45,7 +45,7 @@ name: {{ .ProjectName }}`
 // reader: Allow to read from different inputs.
 
 func InitiateProject(reader io.Reader) error {
-	templateContent :=`builder:
+	templateContent := `builder:
   image: {{ if .BuildImage }}{{ .BuildImage }}{{ else }}<image_name>{{ end }}
   tag: {{ if .Tag }}{{ .Tag }}{{ else }}latest{{ end }}
   privileged: true
@@ -60,7 +60,7 @@ name: {{ .ProjectName }}`
 	}
 
 	// Create the .pauli folder.
-	if err := os.Mkdir(".pauli", os.ModePerm); err != nil {
+	if err := os.MkdirAll(".pauli", os.ModePerm); err != nil {
 		logs.Logger.Error().Err(err).Msg("error")
 	}
 	// Create the pauli.sh file.
@@ -78,7 +78,7 @@ name: {{ .ProjectName }}`
 			logs.Logger.Error().Err(err).Msg("error")
 		}
 
-		// Write the body in the pauli.sh file	
+		// Write the body in the pauli.sh file
 		if _, err := io.Copy(file, r.Body); err != nil {
 			logs.Logger.Error().Err(err).Msg("error")
 		}
@@ -90,7 +90,6 @@ name: {{ .ProjectName }}`
 	}()
 
 	i := Initiate{}
-
 
 	scanner := bufio.NewScanner(reader)
 	fmt.Printf("Project name (optional, cwd): ")
@@ -115,7 +114,7 @@ name: {{ .ProjectName }}`
 	if err != nil {
 		panic(err)
 	}
-	
+
 	// Apply user entries to the template and save.
 	outputFile, err := os.Create(".pauli/config.yaml")
 	err = tmpl.Execute(outputFile, i)

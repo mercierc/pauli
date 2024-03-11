@@ -1,18 +1,15 @@
 package src
 
 import (
-
-	"fmt"
-	"os"
 	"bufio"
-	"io/ioutil"
-	"testing"
+	"fmt"
 	"gopkg.in/yaml.v2"
+	"io/ioutil"
+	"os"
+	"testing"
 
 	"github.com/mercierc/pauli/logs"
 )
-
-
 
 func TestInitiateProject(t *testing.T) {
 
@@ -20,7 +17,7 @@ func TestInitiateProject(t *testing.T) {
 	file, err := ioutil.TempFile("/tmp", "test")
 	defer file.Close()
 	if err != nil {
-		logs.Logger.Error().Err(err).Msg("error")	
+		logs.Logger.Error().Err(err).Msg("error")
 	}
 
 	// Write and replace the cursor at the begining of the file
@@ -30,9 +27,9 @@ func TestInitiateProject(t *testing.T) {
 	InitiateProject(file)
 
 	_, err = os.Stat(".pauli")
-	
+
 	if os.IsNotExist(err) {
-	        t.Fatalf(".pauli folder does not exist %v", err)
+		t.Fatalf(".pauli folder does not exist %v", err)
 	}
 
 	// Load template from config.yaml
@@ -41,11 +38,10 @@ func TestInitiateProject(t *testing.T) {
 	var confYaml Configuration
 	err = yaml.Unmarshal(content, &confYaml)
 
-	if (
-		confYaml.Name != "War" ||
+	if confYaml.Name != "War" ||
 		confYaml.Builder.Image != "And" ||
-		confYaml.Builder.Tag != "Peace") {
-		
+		confYaml.Builder.Tag != "Peace" {
+
 		t.Fatal("Input for config.yaml are wrong.")
 	}
 	fmt.Printf("%+v", confYaml)
@@ -58,11 +54,10 @@ func TestInitiateProject(t *testing.T) {
 	// Parse yaml config  file.
 	err = yaml.Unmarshal(content, &confYaml)
 	fmt.Printf("%+v", confYaml)
-	if (
-		confYaml.Name != "src" ||
+	if confYaml.Name != "src" ||
 		confYaml.Builder.Image != "<image_name>" ||
-		confYaml.Builder.Tag != "latest") {
-		
+		confYaml.Builder.Tag != "latest" {
+
 		t.Fatalf("Input for config.yaml are wrong.")
 	}
 
@@ -74,7 +69,7 @@ func TestInitiateProject(t *testing.T) {
 	if firstLine != "#!/bin/sh" && firstLine != "#!/bin/bash" {
 		t.Fatal("pauli.sh is empty")
 	}
-	
+
 	//Clean
 	os.RemoveAll(".pauli")
 }
