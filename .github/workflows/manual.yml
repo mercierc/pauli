@@ -31,5 +31,5 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: "pauli_v${{ input.VERSION }}"
+        name: "pauli_v${{ inputs.VERSION }}"
         path: pauli
