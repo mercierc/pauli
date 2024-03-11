@@ -38,7 +38,7 @@ func NewContainerManager(options ...Opt) *ContainerManager {
 	c.ctx = context.Background()
 
 	// Initialize the docker client.
-	c.cli, _ = client.NewClientWithOpts()
+	c.cli, _ = client.NewClientWithOpts(client.WithAPIVersionNegotiation())
 
 	for _, opt := range options {
 		opt(c)
@@ -149,10 +149,7 @@ func WithConfigYaml(configYamlPath string, shell bool) Opt {
 		case errdefs.ErrConflict:
 			// If the container already exists, use it.
 			logs.Logger.Info().Msg("Container already exists.")
-
-		case errdefs.ErrInvalidParameter:
 			logs.Logger.Error().Err(err).Msgf("Error type is %T", errorType)
-			logs.Logger.Info().Msg("Adapt your volume mapping configuration to solve this issue.")
 
 		case errdefs.ErrNotFound:
 			logs.Logger.Info().Msgf("Pull %s", conf.Image)
@@ -165,7 +162,7 @@ func WithConfigYaml(configYamlPath string, shell bool) Opt {
 			resp, err = c.cli.ContainerCreate(c.ctx, &conf, &confHost, nil, nil, c.containerName)
 
 		default:
-			logs.Logger.Error().Err(err).Msgf("Error in WithConfigYaml(), errytype is %T", errorType)
+			logs.Logger.Error().Err(err).Msgf("Error type is %T", errorType)
 			panic(err)
 		}
 		c.containerID = resp.ID	
