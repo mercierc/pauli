@@ -15,46 +15,46 @@ on:
         type: string
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
+  jobs:
+    build:
+      runs-on: ubuntu-latest
+      steps:
+	- uses: actions/checkout@v3
 
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.21.1'
+	- name: Set up Go
+	  uses: actions/setup-go@v4
+	  with:
+	    go-version: '1.21.1'
 
-      - name: Build
-        run: |
-          sed -E "s/[0-9]+(\.[0-9]+)*/${{ inputs.VERSION }}/" -i cmd/root.go
-          go build -v .
+	- name: Build
+	  run: |
+	    sed -E "s/[0-9]+(\.[0-9]+)*/${{ inputs.VERSION }}/" -i cmd/root.go
+	    go build -v .
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: "pauli_v${{ inputs.version }}"
-          path: pauli
-           
-      - name: Commit version
-        run: |
-          git config user.name github-actions
-          git config user.email github-actions@github.com
-          git add cmd/root.go
-          git commit -m "Version ${{ inputs.version }}"
-          git push
-  
-  tests:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
+	- name: Upload artifact
+	  uses: actions/upload-artifact@v4
+	  with:
+	    name: "pauli_v${{ inputs.version }}"
+	    path: pauli
 
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.21.1'
-      
-      - name: Tests
-        run: |  
-          go test -v ./...
+	- name: Commit version
+	  run: |
+	    git config user.name github-actions
+	    git config user.email github-actions@github.com
+	    git add cmd/root.go
+	    git commit -m "Version ${{ inputs.version }}"
+	    git push
+
+    tests:
+      runs-on: ubuntu-latest
+      steps:
+	- uses: actions/checkout@v3
+
+	- name: Set up Go
+	  uses: actions/setup-go@v4
+	  with:
+	    go-version: '1.21.1'
+
+	- name: Tests
+	  run: |  
+	    go test -v ./...
