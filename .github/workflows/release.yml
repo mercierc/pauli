@@ -1,0 +1,59 @@
+# This is a basic workflow that is manually triggered
+
+name: Release
+
+# Controls when the action will run. Workflow runs when manually triggered using the UI
+# or API.
+on:
+  workflow_dispatch:
+    # Inputs the workflow accepts.
+    inputs:
+      version:
+        description: 'Version of type x.x.x'
+        default: 'x.x.x'
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21.1'
+   
+      - name: Build
+        run: |
+          sed -E "s/[0-9]+(\.[0-9]+)*/${{ inputs.VERSION }}/" -i cmd/root.go
+          go build -v .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: "pauli_v${{ inputs.version }}"
+          path: pauli
+
+      - name: Commit version
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add cmd/root.go
+          git commit -m "Version ${{ inputs.version }}"
+          git push origin HEAD:$GITHUB_REF
+
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21.1'
+
+      - name: Tests
+        run: |  
+          go test -v ./...
