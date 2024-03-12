@@ -42,7 +42,7 @@ jobs:
           git config user.email github-actions@github.com
           git add cmd/root.go
           git commit -m "Version ${{ inputs.version }}"
-          git push
+          git push origin HEAD:$GITHUB_REF
 
   tests:
     runs-on: ubuntu-latest
