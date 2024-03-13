@@ -54,5 +54,6 @@ jobs:
           git push origin HEAD:$GITHUB_REF
 
       - name: Github release
-        run: |
-          gh release create v${{ inputs.version }} ./pauli
+        run: gh release create v${{ inputs.version }} ./pauli
+        env:
+          GH_TOKEN: ${{ github.token }}
