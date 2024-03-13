@@ -17,10 +17,6 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        parallel_steps: [test, build]
-
     steps:
       - uses: actions/checkout@v4
       
@@ -30,13 +26,11 @@ jobs:
           go-version: '1.21.1'
    
       - name: Build
-        if: matrix.parallel_steps == 'build'
         run: |
           sed -E "s/[0-9]+(\.[0-9]+){2}/${{ inputs.VERSION }}/" -i cmd/root.go
           go build -v .
 
       - name: Tests
-        if: matrix.parallel_steps == 'test'
         run: go test -v ./...
 
       - name: Upload artifact
@@ -54,6 +48,6 @@ jobs:
           git push origin HEAD:$GITHUB_REF
 
       - name: Github release
-        run: gh release create v${{ inputs.version }} ./pauli
+        run: gh release create v${{ inputs.version }} pauli
         env:
           GH_TOKEN: ${{ github.token }}
