@@ -23,6 +23,7 @@ jobs:
       - name: Build
         if: matrix.parallel_steps == 'build'
         run: go build -v .
+
   
       - name: Tests
         if: matrix.parallel_steps == 'test'

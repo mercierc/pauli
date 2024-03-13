@@ -1,16 +1,14 @@
 package src
 
-import(
-	"testing"
-	"io/ioutil"
-	"gopkg.in/yaml.v3"
+import (
 	"bufio"
 	"fmt"
-	"os"
 	"github.com/mercierc/pauli/logs"
+	"gopkg.in/yaml.v3"
+	"io/ioutil"
+	"os"
+	"testing"
 )
-
-
 
 // This test the most important Opt. It creates a container from the config.yaml
 // file and test that the created container is well configured.
@@ -19,17 +17,16 @@ func TestNewContainerManager(t *testing.T) {
 	logs.Init("trace", true)
 	config := Configuration{
 		Builder: Builder{
-			Image: `hello-world`,
-			Tag: `latest`,
+			Image:      `hello-world`,
+			Tag:        `latest`,
 			Privileged: true,
 			Volumes: []Volume{
 				Volume{
-					Type: `bind`,
+					Type:   `bind`,
 					Source: `/var/run/docker.sock`,
 					Target: `/var/run/docker.sock`,
 				},
 			},
-			
 		},
 		Name: `Test_pauli_image`,
 	}
@@ -52,9 +49,8 @@ func TestNewContainerManager(t *testing.T) {
 		WithName("pauli_TI"),
 		WithEnv([]string{"VAR1=1", "VAR2=2"}),
 		WithConfigYaml(file.Name(), false),
-		WithCmd(append([]string{"/bin/sh", ".pauli/pauli.sh"})),
+		WithCmd([]string{"/bin/sh", ".pauli/pauli.sh"}),
 	)
-
 
 	// Here we load the information of the created container and ensure
 	// that the config is correct
@@ -66,14 +62,13 @@ func TestNewContainerManager(t *testing.T) {
 	// Current working dir is mounted by default.
 	mountPoints := []map[string]string{
 		map[string]string{
-			`Source`:  `/var/run/docker.sock`,
+			`Source`:      `/var/run/docker.sock`,
 			`Destination`: `/var/run/docker.sock`,
 		},
 		map[string]string{
-			`Source`:  cwd,
+			`Source`:      cwd,
 			`Destination`: `/app`,
 		},
-
 	}
 
 	var mountChecked uint8 = 0
@@ -87,20 +82,19 @@ func TestNewContainerManager(t *testing.T) {
 	fmt.Println("mountedCheck", mountChecked)
 	if mountChecked != uint8(len(mountPoints)) {
 		t.Fatalf("All volumes are not mounted %d/%d", mountChecked, len(mountPoints))
-	} 
-		
+	}
+
 	// Check env variables
 	if json.Config.Env[0] != "VAR1=1" || json.Config.Env[1] != "VAR2=2" {
-	 	t.Fatalf("Wrong env variables %v, %v. Waited: %v %v", json.Config.Env[0], json.Config.Env[1], "VAR1=1", "VAR2=2")
-		
+		t.Fatalf("Wrong env variables %v, %v. Waited: %v %v", json.Config.Env[0], json.Config.Env[1], "VAR1=1", "VAR2=2")
+
 	}
 
 	// Check the Cmd
 	if json.Config.Cmd[0] != "sleep" || json.Config.Cmd[1] != "infinity" {
-	 	t.Fatalf("Wrong command %v. Waited `sleep infinity`", json.Config.Cmd)
+		t.Fatalf("Wrong command %v. Waited `sleep infinity`", json.Config.Cmd)
 	}
-			
+
 	fmt.Println("Cmd ", json.Config.Cmd)
-	
-	
+
 }

@@ -1,10 +1,8 @@
 package cmd
 
-import(
-	"fmt"
-	
-	"github.com/spf13/cobra"
+import (
 	"github.com/mercierc/pauli/logs"
+	"github.com/spf13/cobra"
 )
 
 var rootCmd = &cobra.Command{
@@ -13,9 +11,7 @@ var rootCmd = &cobra.Command{
 		" environment",
 	Long: "Pauli allow to transparently develop and run project in a " +
 		"docker container containing all the dependencies of your application",
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("Rootcmd")
-	},
+	Run: func(cmd *cobra.Command, args []string) {},
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		// Initialize the logger.
 		logs.Init(logLevel, dev)
@@ -26,19 +22,19 @@ var rootCmd = &cobra.Command{
 var pauliShPath = ".pauli/pauli.sh"
 var configPath = ".pauli/config.yaml"
 
-var(
+var (
 	logLevel string
-	dev bool
+	dev      bool
 )
 
 func init() {
 	rootCmd.PersistentFlags().BoolVar(&dev,
-		"dev", false,
-		"Developper friendly log format.")
-	
+		"json", false,
+		"Json log format.")
+
 	rootCmd.PersistentFlags().StringVar(&logLevel,
 		"log", "info",
-		"Niveau de log (trace, debug, info, warn, error, panic)")
+		"Log level: trace, debug, info, warn, error or panic)")
 }
 
 // Parse the command line.
@@ -58,12 +54,8 @@ func Parse() error {
 	} {
 		c.Flags().StringArrayVarP(&envVars, "env",
 			"e", []string{}, "--env K11=V1 --env K2=V2")
-		
+
 		rootCmd.AddCommand(c)
 	}
 	return rootCmd.Execute()
 }
-
-
-
-
