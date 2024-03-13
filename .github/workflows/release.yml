@@ -30,6 +30,10 @@ jobs:
           sed -E "s/[0-9]+(\.[0-9]+){2}/${{ inputs.VERSION }}/" -i cmd/root.go
           go build -v .
 
+      - name: Tests
+        run: |  
+          go test -v ./...
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
@@ -43,17 +47,3 @@ jobs:
           git add cmd/root.go
           git commit -m "Version ${{ inputs.version }}"
           git push origin HEAD:$GITHUB_REF
-
-  tests:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.21.1'
-
-      - name: Tests
-        run: |  
-          go test -v ./...
