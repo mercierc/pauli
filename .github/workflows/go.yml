@@ -24,7 +24,7 @@ jobs:
           go-version: '1.21.1'
 
       - name: Build
-      	if: matrix.parellel_steps == 'test'
+        if: matrix.parellel_steps == 'test'
         run: go build -v .
   
       - name: Tests
