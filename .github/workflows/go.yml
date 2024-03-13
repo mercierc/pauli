@@ -2,15 +2,16 @@
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
 
 name: Go
-
-env:
-  VERSION: "0.0.0"
   
 on: [push]
 
 jobs:
-  build:
+  go:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        parallel_steps: [build, test]
+
     steps:
       - uses: actions/checkout@v4
 
@@ -20,19 +21,10 @@ jobs:
           go-version: '1.21.1'
 
       - name: Build
-        run: |
-          go build -v .
-  
-  tests:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
+        if: matrix.parallel_steps == 'build'
+        run: go build -v .
 
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.21.1'
-      
+  
       - name: Tests
-        run: |  
-          go test -v ./...
+        if: matrix.parallel_steps == 'test'
+        run: go test -v ./...
