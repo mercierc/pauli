@@ -6,6 +6,24 @@ Description
 The pauli project aims to assist and construct your application around a build image containing all the necessary tools and dependencies your project needs.
 It simplify the use of a reproductible environment for developpement and integration by wrapping docker utilities that would be painfull to do with docker directly, such as: mounting volumes, select the right image, launch an interactice session...
 
+Installation
+-----------
+To install the latest release version
+```
+# Install the latest release
+VERSION=$(curl -I https://github.com/mercierc/pauli/releases/latest | grep -Eo 'v[0-9]+(\.[0-9]){2}')
+wget https://github.com/mercierc/pauli/releases/download/$VERSION/pauli
+
+sudo chown 700 pauli
+sudo install pauli /usr/local/bin
+```
+To install a specific version set VERSION at vX.X.X, the desired version
+
+Verify the installation with 
+```
+pauli --version
+```
+
 Quick start
 ---------
 Complete the bash functions you need in the .pauli/pauli.sh file and call them inside the docker build container of your choice by invoking the pauli CLI. 
