@@ -8,10 +8,6 @@ on: [push]
 jobs:
   go:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        parallel_steps: [build, test]
-
     steps:
       - uses: actions/checkout@v4
 
@@ -21,10 +17,7 @@ jobs:
           go-version: '1.21.1'
 
       - name: Build
-        if: matrix.parallel_steps == 'build'
         run: go build -v .
-
   
       - name: Tests
-        if: matrix.parallel_steps == 'test'
         run: go test -v ./...
