@@ -58,8 +58,8 @@ name: go_example_with_pauli
 Now, write the build and run functions according to your needs.
 ```
 function build(){
-		info build
-		go build -o hello main.go
+    info build
+    go build -o hello main.go
 }
 
 function run(){
