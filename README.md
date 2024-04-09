@@ -4,7 +4,7 @@ Pauli
 Description
 -----------
 The pauli project aims to assist and construct your application around a build image containing all the necessary tools and dependencies your project needs.
-It simplify the use of a reproductible environment for developpement and integration by wrapping docker utilities that would be painfull to do with docker directly, such as: mounting volumes, select the right image, launch an interactice session...
+It simplifies the use of a reproductible environment for developpement and integration by wrapping docker utilities that would be painfull to do with the docker cli directly, such as: mounting volumes, select the right image, launch an interactive session...
 
 Installation
 -----------
@@ -17,7 +17,7 @@ wget https://github.com/mercierc/pauli/releases/download/$VERSION/pauli
 sudo chown 700 pauli
 sudo install pauli /usr/local/bin
 ```
-To install a specific version set VERSION at vX.X.X, the desired version
+To install a specific version set value of the variable VERSION to vX.X.X, the desired version
 
 Verify the installation with 
 ```
@@ -41,7 +41,7 @@ func main() {
         fmt.Printf("Hello, %s!", os.Getenv("WHO"))
 }
 ```
-In the same repository, initiate to the pauli project with the command:
+In the same repository, initiate the pauli project with the command:
 `pauli init`
 It will ask you for image name and tag and then create the _.pauli/_ folder. I choose an image of my choice, containing all the necessary to build and run my project. Here is the **.pauli/config.yaml** file created
 ```
@@ -77,4 +77,4 @@ That's all! You can now build and run your executable in a build container undne
 run 
 Hello, GO!
 ```
-Note that we can pass environement variables as we would do with docker.
+Note that we can pass environement variables as we would do with docker with the --env.
