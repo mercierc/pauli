@@ -3,7 +3,7 @@ module github.com/mercierc/pauli
 go 1.21.1
 
 require (
-	github.com/docker/docker v25.0.5+incompatible 
+	github.com/docker/docker v25.0.5+incompatible
 	github.com/rs/zerolog v1.31.0
 	github.com/spf13/cobra v1.8.0
 	gopkg.in/yaml.v2 v2.4.0
