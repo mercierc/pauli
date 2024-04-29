@@ -38,7 +38,8 @@ func CallPauliDotShFunc(command string) int {
 	out, _ := io.ReadAll(r)
 	os.Stdout = oldStdout
 
-	return strings.Count(string(out), command)
+	// Test if the shell function has been called by looking for its echo command.
+	return strings.Count(string(out), command + " not implemented.")
 }
 
 func TestMain(m *testing.M) {
