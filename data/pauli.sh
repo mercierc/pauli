@@ -11,7 +11,7 @@ function build(){
 }
 
 function run(){
-    echo "run not implemented"
+    echo "run not implemented."
 }
 
 function clean(){
