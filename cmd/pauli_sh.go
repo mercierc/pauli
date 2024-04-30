@@ -19,9 +19,7 @@ func commonRun(cmd *cobra.Command, args []string) {
 	logs.Logger.Debug().Msgf("pauli command %s", args)
 	logs.Logger.Debug().Msgf("--env=%s", envVars)
 
-	// Ensure .pauli/pauli.sh and .pauli/config.yml exist.
-	logs.Logger.Info().Msg("OK")
-	
+	// Ensure .pauli/pauli.sh and .pauli/config.yml exist.	
 	for _, file := range []string{".pauli", ".pauli/config.yaml", ".pauli/pauli.sh"} {
 		_, err := os.Stat(file)
 		
