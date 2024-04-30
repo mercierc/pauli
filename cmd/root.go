@@ -11,11 +11,10 @@ var rootCmd = &cobra.Command{
 		" environment",
 	Long: "Pauli allows to transparently develop and run project in a " +
 		"docker container containing all the dependencies of your application",
-	Run: func(cmd *cobra.Command, args []string) {},
+	Run: func(cmd *cobra.Command, args []string) {cmd.Help()},
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		// Initialize the logger.
 		logs.Init(logLevel, dev)
-		cmd.Help()
 	},
 	Version: "0.0.3",
 }
