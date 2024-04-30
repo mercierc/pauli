@@ -19,6 +19,20 @@ func commonRun(cmd *cobra.Command, args []string) {
 	logs.Logger.Debug().Msgf("pauli command %s", args)
 	logs.Logger.Debug().Msgf("--env=%s", envVars)
 
+	// Ensure .pauli/pauli.sh and .pauli/config.yml exist.
+	logs.Logger.Info().Msg("OK")
+	
+	for _, file := range []string{".pauli", ".pauli/config.yaml", ".pauli/pauli.sh"} {
+		_, err := os.Stat(file)
+		
+		if os.IsNotExist(err) {
+			logs.Logger.Error().Err(err).Msgf("To solve the issue: " +
+				"add the missing file or directory '%v' manually " +
+				"or run pauli init to initiate your project", file)
+			os.Exit(1)
+		}
+	}
+
 	var cm *src.ContainerManager
 
 	// Extract container name from the current folder
