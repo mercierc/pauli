@@ -16,7 +16,7 @@ var rootCmd = &cobra.Command{
 		// Initialize the logger.
 		logs.Init(logLevel, dev)
 	},
-	Version: "0.0.4",
+	Version: "0.0.5",
 }
 
 var pauliShPath = ".pauli/pauli.sh"
